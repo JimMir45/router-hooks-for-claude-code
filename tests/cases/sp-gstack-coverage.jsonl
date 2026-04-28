@@ -1,0 +1,35 @@
+{"skill":"brainstorming","framework":"SP","prompt":"我想做个 AI 写作助手,先头脑风暴一下产品形态","expected_fw":"SP"}
+{"skill":"brainstorming","framework":"SP","prompt":"帮我 brainstorm 一些用户增长的创新点子","expected_fw":"SP"}
+{"skill":"writing-plans","framework":"SP","prompt":"给我做一个 3 周的迁移计划,把 monolith 拆成 microservices","expected_fw":"SP"}
+{"skill":"writing-plans","framework":"SP","prompt":"写一个完整的多步实现 plan,把推荐算法改成在线学习","expected_fw":"SP"}
+{"skill":"test-driven-development","framework":"SP","prompt":"用 TDD 实现一个 LRU cache,先写测试再实现","expected_fw":"SP"}
+{"skill":"test-driven-development","framework":"SP","prompt":"我要做个 user auth flow,TDD 走起","expected_fw":"SP"}
+{"skill":"systematic-debugging","framework":"SP","prompt":"这个 race condition 反复出现,需要系统性调试","expected_fw":"SP"}
+{"skill":"systematic-debugging","framework":"SP","prompt":"内存泄漏定位不到根因,系统化 debug 一下","expected_fw":"SP"}
+{"skill":"refactoring","framework":"SP","prompt":"把这 5 个文件里的重复代码抽出策略模式,做大型 refactor","expected_fw":"SP"}
+{"skill":"refactoring","framework":"SP","prompt":"代码重构 auth 模块,跨多文件抽出 service layer","expected_fw":"SP"}
+{"skill":"frontend-design","framework":"SP","prompt":"实现一个响应式 dashboard 前端,React + tailwind","expected_fw":"SP"}
+{"skill":"mcp-builder","framework":"SP","prompt":"帮我做个 MCP server,接入 Linear API","expected_fw":"SP"}
+{"skill":"scientific-method","framework":"SP","prompt":"我有 3 个推荐算法假设,用科学方法对比验证一下","expected_fw":"SP"}
+{"skill":"data-archaeology","framework":"SP","prompt":"挖一下这个老数据集里有什么模式,做 data archaeology","expected_fw":"SP"}
+{"skill":"office-hours","framework":"GS","gs_role":"CEO","prompt":"我想做个 AI 笔记产品,值不值得做?","expected_fw":"GS"}
+{"skill":"office-hours","framework":"GS","gs_role":"CEO","prompt":"这个产品 idea 你觉得有市场吗?","expected_fw":"GS"}
+{"skill":"plan-ceo-review","framework":"GS","gs_role":"CEO","prompt":"帮我 review 一下 Q3 的产品规划","expected_fw":"GS"}
+{"skill":"plan-ceo-review","framework":"GS","gs_role":"CEO","prompt":"从 CEO 视角审一下我的下季度增长策略","expected_fw":"GS"}
+{"skill":"plan-eng-review","framework":"GS","gs_role":"EngManager","prompt":"工程视角 review 一下这个架构决策","expected_fw":"GS"}
+{"skill":"plan-eng-review","framework":"GS","gs_role":"EngManager","prompt":"engineering manager 视角看下这个技术方案","expected_fw":"GS"}
+{"skill":"design-consultation","framework":"GS","gs_role":"Designer","prompt":"给我的 dashboard 做个设计咨询","expected_fw":"GS"}
+{"skill":"review","framework":"GS","gs_role":"EngManager","prompt":"review 这个 PR 的 diff,给我反馈","expected_fw":"GS"}
+{"skill":"review","framework":"GS","gs_role":"EngManager","prompt":"看一下我的代码改动,逐项 review","expected_fw":"GS"}
+{"skill":"qa-only","framework":"GS","gs_role":"QA","prompt":"QA 视角测一下这个功能","expected_fw":"GS"}
+{"skill":"qa-only","framework":"GS","gs_role":"QA","prompt":"找一下这个站点的 bug","expected_fw":"GS"}
+{"skill":"ship","framework":"GS","gs_role":"ReleaseManager","prompt":"ship 一下当前分支,创建 PR 部署","expected_fw":"GS"}
+{"skill":"ship","framework":"GS","gs_role":"ReleaseManager","prompt":"发版!把这个 feature 推到生产","expected_fw":"GS"}
+{"skill":"land-and-deploy","framework":"GS","gs_role":"ReleaseManager","prompt":"merge 完之后部署并验证","expected_fw":"GS"}
+{"skill":"retro","framework":"GS","gs_role":"EngManager","prompt":"这周做个 retro,看做了什么","expected_fw":"GS"}
+{"skill":"document-release","framework":"GS","gs_role":"DocEngineer","prompt":"发版后写一份 release notes","expected_fw":"GS"}
+{"skill":"design-review","framework":"GS","gs_role":"QA","prompt":"做一个视觉 design audit","expected_fw":"GS"}
+{"skill":"investigate","framework":"GS","gs_role":"EngManager","prompt":"这个 bug 调查一下根因","expected_fw":"ECC"}
+{"skill":"plan-design-review","framework":"GS","gs_role":"Designer","prompt":"对这个 plan 做设计 review","expected_fw":"GS"}
+{"skill":"cso","framework":"GS","gs_role":"EngManager","prompt":"做个 OWASP 安全审计","expected_fw":"ECC"}
+{"skill":"benchmark","framework":"GS","gs_role":"EngManager","prompt":"做一次性能 benchmark,对比新旧版本","expected_fw":"GS"}

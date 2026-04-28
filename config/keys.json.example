@@ -1,0 +1,50 @@
+{
+  "_comment": "Router Hook API Key Configuration",
+  "_docs": "Supports any OpenAI-compatible endpoint: OpenAI / Anthropic / Together.ai / OpenRouter / local Ollama, etc.",
+  "_usage": "cp keys.json.example keys.json  then fill in your actual keys",
+
+  "primary": {
+    "name": "openai",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "model": "gpt-4o-mini",
+    "key": "REPLACE_WITH_YOUR_KEY"
+  },
+
+  "fallback": {
+    "name": "openai-fallback",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "model": "gpt-4o-mini",
+    "key": "REPLACE_WITH_YOUR_KEY"
+  },
+
+  "_examples_other_providers": {
+    "anthropic_haiku": {
+      "name": "anthropic",
+      "endpoint": "https://api.anthropic.com/v1/messages",
+      "model": "claude-haiku-4-5",
+      "key": "REPLACE_WITH_YOUR_ANTHROPIC_KEY",
+      "_note": "Anthropic endpoint is NOT OpenAI-compatible; use an adapter proxy if needed"
+    },
+    "together_ai": {
+      "name": "together",
+      "endpoint": "https://api.together.xyz/v1/chat/completions",
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      "key": "REPLACE_WITH_YOUR_TOGETHER_KEY"
+    },
+    "local_ollama": {
+      "name": "ollama",
+      "endpoint": "http://localhost:11434/v1/chat/completions",
+      "model": "qwen2.5:7b",
+      "key": "ollama"
+    },
+    "key_file_indirection": {
+      "name": "my-provider",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-4o-mini",
+      "key": "",
+      "key_file": "/path/to/credentials.json",
+      "key_field": "OPENAI_API_KEY",
+      "_note": "key_file allows reading the actual key from another JSON file"
+    }
+  }
+}

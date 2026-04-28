@@ -1,0 +1,48 @@
+# Secrets — never commit
+config/keys.json
+*.key
+*.pem
+*.env
+.env*
+
+# Logs and runtime data
+*.log
+logs/
+reports/
+~/.claude/router-logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test output — keep main result files committed (they are deliverables);
+# only ignore local intermediate logs.
+tests/results/*.log
+
+# Demo artifacts — keep v2 keynote + whitepaper + script (deliverables);
+# only ignore old v1 backup and intermediate generated files.
+demo/presentation-v1.html.bak
+demo/presentation.html
+demo/*.tmp.html
+
+# Internal working notes (not meant for the public repo)
+NEXT-STEPS.md

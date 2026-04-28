@@ -1,0 +1,45 @@
+{
+  "total": 100,
+  "passed": 100,
+  "failed": 0,
+  "true_positive_rate": 1.0,
+  "true_negative_rate": 1.0,
+  "false_positive": [],
+  "false_negative": [],
+  "by_category": {
+    "blacklist_1": {
+      "total": 20,
+      "passed": 20
+    },
+    "blacklist_2": {
+      "total": 8,
+      "passed": 8
+    },
+    "scope_creep": {
+      "total": 12,
+      "passed": 12
+    },
+    "failure_streak": {
+      "total": 20,
+      "passed": 20
+    },
+    "allow_safe_bash": {
+      "total": 29,
+      "passed": 29
+    },
+    "allow_scope_in_range": {
+      "total": 4,
+      "passed": 4
+    },
+    "allow_other_tools": {
+      "total": 3,
+      "passed": 3
+    },
+    "allow_streak_reset": {
+      "total": 4,
+      "passed": 4
+    }
+  },
+  "duration_seconds": 2.08,
+  "timestamp": "2026-04-27T16:27:40"
+}

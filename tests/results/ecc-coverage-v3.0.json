@@ -1,0 +1,1288 @@
+{
+  "total_skills": 89,
+  "total_cases": 159,
+  "strict_correct_skills": 30,
+  "reasonable_correct_skills": 73,
+  "case_strict_accuracy": 0.258,
+  "case_reasonable_accuracy": 0.736,
+  "skill_strict_accuracy": 0.337,
+  "skill_reasonable_accuracy": 0.82,
+  "wrong_skills_strict": [
+    "agent-eval",
+    "agent-payment-x402",
+    "ai-first-engineering",
+    "ai-regression-testing",
+    "api-design",
+    "architecture-decision-records",
+    "article-writing",
+    "autonomous-loops",
+    "backend-patterns",
+    "blueprint",
+    "ck",
+    "claude-api",
+    "claude-devfleet",
+    "codebase-onboarding",
+    "configure-ecc",
+    "content-engine",
+    "content-hash-cache-pattern",
+    "context-budget",
+    "continuous-agent-loop",
+    "continuous-learning",
+    "continuous-learning-v2",
+    "cost-aware-llm-pipeline",
+    "crosspost",
+    "data-scraper-agent",
+    "deployment-patterns",
+    "design-system",
+    "dmux-workflows",
+    "enterprise-agent-ops",
+    "eval-harness",
+    "fal-ai-media",
+    "frontend-slides",
+    "git-workflow",
+    "golang-patterns",
+    "golang-testing",
+    "iterative-retrieval",
+    "mcp-server-patterns",
+    "nanoclaw-repl",
+    "nutrient-document-processing",
+    "plankton-code-quality",
+    "product-lens",
+    "project-guidelines-example",
+    "prompt-optimizer",
+    "python-patterns",
+    "ralphinho-rfc-pipeline",
+    "regex-vs-llm-structured-text",
+    "rules-distill",
+    "santa-method",
+    "skill-comply",
+    "skill-stocktake",
+    "springboot-patterns",
+    "springboot-security",
+    "springboot-tdd",
+    "springboot-verification",
+    "strategic-compact",
+    "tdd-workflow",
+    "team-builder",
+    "token-budget-advisor",
+    "verification-loop",
+    "visa-doc-translate"
+  ],
+  "wrong_skills_reasonable": [
+    "ck",
+    "configure-ecc",
+    "content-engine",
+    "context-budget",
+    "continuous-learning",
+    "crosspost",
+    "fal-ai-media",
+    "golang-patterns",
+    "nanoclaw-repl",
+    "plankton-code-quality",
+    "prompt-optimizer",
+    "rules-distill",
+    "skill-comply",
+    "strategic-compact",
+    "token-budget-advisor",
+    "verification-loop"
+  ],
+  "always_gs_skills": [
+    "agent-eval",
+    "agent-payment-x402",
+    "ai-regression-testing",
+    "api-design",
+    "architecture-decision-records",
+    "autonomous-loops",
+    "blueprint",
+    "deployment-patterns",
+    "design-system",
+    "enterprise-agent-ops",
+    "eval-harness",
+    "iterative-retrieval",
+    "ralphinho-rfc-pipeline",
+    "regex-vs-llm-structured-text",
+    "santa-method",
+    "springboot-verification",
+    "team-builder",
+    "visa-doc-translate"
+  ],
+  "by_category": {
+    "language_frameworks": {
+      "total": 14,
+      "strict_correct": 7,
+      "reasonable_correct": 13,
+      "strict_accuracy": 0.5,
+      "reasonable_accuracy": 0.93
+    },
+    "agent_ai_tooling": {
+      "total": 19,
+      "strict_correct": 3,
+      "reasonable_correct": 17,
+      "strict_accuracy": 0.16,
+      "reasonable_accuracy": 0.89
+    },
+    "frontend_ux": {
+      "total": 6,
+      "strict_correct": 4,
+      "reasonable_correct": 6,
+      "strict_accuracy": 0.67,
+      "reasonable_accuracy": 1.0
+    },
+    "backend_infra": {
+      "total": 11,
+      "strict_correct": 5,
+      "reasonable_correct": 11,
+      "strict_accuracy": 0.45,
+      "reasonable_accuracy": 1.0
+    },
+    "ai_llm_pipeline": {
+      "total": 9,
+      "strict_correct": 3,
+      "reasonable_correct": 7,
+      "strict_accuracy": 0.33,
+      "reasonable_accuracy": 0.78
+    },
+    "ecc_meta_tools": {
+      "total": 18,
+      "strict_correct": 5,
+      "reasonable_correct": 11,
+      "strict_accuracy": 0.28,
+      "reasonable_accuracy": 0.61
+    },
+    "content_media": {
+      "total": 7,
+      "strict_correct": 1,
+      "reasonable_correct": 4,
+      "strict_accuracy": 0.14,
+      "reasonable_accuracy": 0.57
+    },
+    "misc": {
+      "total": 8,
+      "strict_correct": 3,
+      "reasonable_correct": 7,
+      "strict_accuracy": 0.38,
+      "reasonable_accuracy": 0.88
+    }
+  },
+  "skill_results": {
+    "agent-eval": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "research",
+        "EngManager"
+      ],
+      "avg_confidence": 0.89
+    },
+    "agent-harness-construction": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "GS"
+      ],
+      "actual_subs": [
+        "research",
+        "EngManager"
+      ],
+      "avg_confidence": 0.83
+    },
+    "agent-payment-x402": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "agentic-engineering": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "CC"
+      ],
+      "actual_subs": [
+        "research",
+        "-"
+      ],
+      "avg_confidence": 0.64
+    },
+    "ai-first-engineering": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.7
+    },
+    "ai-regression-testing": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "other",
+        "EngManager"
+      ],
+      "avg_confidence": 0.84
+    },
+    "api-design": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.83
+    },
+    "architecture-decision-records": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "DocEngineer",
+        "DocEngineer"
+      ],
+      "avg_confidence": 0.88
+    },
+    "article-writing": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "GS"
+      ],
+      "actual_subs": [
+        "-",
+        "DocEngineer"
+      ],
+      "avg_confidence": 0.82
+    },
+    "autonomous-loops": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.86
+    },
+    "backend-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "benchmark": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "debug"
+      ],
+      "avg_confidence": 0.8
+    },
+    "blueprint": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "browser-qa": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "SP"
+      ],
+      "actual_subs": [
+        "research",
+        "EngManager"
+      ],
+      "avg_confidence": 0.8
+    },
+    "bun-runtime": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    },
+    "canary-watch": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "debug",
+        "debug"
+      ],
+      "avg_confidence": 0.8
+    },
+    "ck": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.83
+    },
+    "claude-api": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.83
+    },
+    "claude-devfleet": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "SP"
+      ],
+      "actual_subs": [
+        "-",
+        "EngManager"
+      ],
+      "avg_confidence": 0.85
+    },
+    "click-path-audit": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "debug",
+        "debug"
+      ],
+      "avg_confidence": 0.82
+    },
+    "clickhouse-io": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "GS"
+      ],
+      "actual_subs": [
+        "debug",
+        "EngManager"
+      ],
+      "avg_confidence": 0.85
+    },
+    "codebase-onboarding": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.85
+    },
+    "coding-standards": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "QA",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    },
+    "configure-ecc": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.81
+    },
+    "content-engine": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "-"
+      ],
+      "avg_confidence": 0.83
+    },
+    "content-hash-cache-pattern": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "SP"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.86
+    },
+    "context-budget": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "other"
+      ],
+      "avg_confidence": 0.82
+    },
+    "continuous-agent-loop": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        ""
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.41
+    },
+    "continuous-learning": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.82
+    },
+    "continuous-learning-v2": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.88
+    },
+    "cost-aware-llm-pipeline": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "SP"
+      ],
+      "actual_subs": [
+        "other",
+        "EngManager"
+      ],
+      "avg_confidence": 0.85
+    },
+    "crosspost": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.84
+    },
+    "data-scraper-agent": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "SP"
+      ],
+      "actual_subs": [
+        "-",
+        "EngManager"
+      ],
+      "avg_confidence": 0.83
+    },
+    "database-migrations": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "database"
+      ],
+      "avg_confidence": 0.84
+    },
+    "deep-research": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.55
+    },
+    "deployment-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "design-system": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "QA",
+        "Designer"
+      ],
+      "avg_confidence": 0.8
+    },
+    "dmux-workflows": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.85
+    },
+    "docker-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "security"
+      ],
+      "avg_confidence": 0.85
+    },
+    "documentation-lookup": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.55
+    },
+    "e2e-testing": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "ECC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "debug"
+      ],
+      "avg_confidence": 0.85
+    },
+    "enterprise-agent-ops": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "other",
+        "EngManager"
+      ],
+      "avg_confidence": 0.85
+    },
+    "eval-harness": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "DocEngineer"
+      ],
+      "avg_confidence": 0.88
+    },
+    "exa-search": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.55
+    },
+    "fal-ai-media": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "-"
+      ],
+      "avg_confidence": 0.8
+    },
+    "foundation-models-on-device": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "CC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    },
+    "frontend-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "research"
+      ],
+      "avg_confidence": 0.83
+    },
+    "frontend-slides": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "GS"
+      ],
+      "actual_subs": [
+        "-",
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "git-workflow": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.84
+    },
+    "golang-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "-"
+      ],
+      "avg_confidence": 0.84
+    },
+    "golang-testing": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "SP"
+      ],
+      "actual_subs": [
+        "-",
+        "EngManager"
+      ],
+      "avg_confidence": 0.84
+    },
+    "iterative-retrieval": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.82
+    },
+    "jpa-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "GS"
+      ],
+      "actual_subs": [
+        "debug",
+        "research"
+      ],
+      "avg_confidence": 0.82
+    },
+    "market-research": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "-",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    },
+    "mcp-server-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.86
+    },
+    "nanoclaw-repl": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.82
+    },
+    "nextjs-turbopack": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "GS"
+      ],
+      "actual_subs": [
+        "research",
+        "EngManager"
+      ],
+      "avg_confidence": 0.69
+    },
+    "nutrient-document-processing": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "EngManager"
+      ],
+      "avg_confidence": 0.81
+    },
+    "nuxt4-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.79
+    },
+    "plankton-code-quality": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.82
+    },
+    "postgres-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "debug",
+        "database"
+      ],
+      "avg_confidence": 0.81
+    },
+    "product-lens": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "SP"
+      ],
+      "actual_subs": [
+        "CEO",
+        "EngManager"
+      ],
+      "avg_confidence": 0.77
+    },
+    "project-guidelines-example": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.84
+    },
+    "prompt-optimizer": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "-"
+      ],
+      "avg_confidence": 0.83
+    },
+    "python-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.81
+    },
+    "python-testing": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "SP"
+      ],
+      "actual_subs": [
+        "research",
+        "debug"
+      ],
+      "avg_confidence": 0.84
+    },
+    "pytorch-patterns": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    },
+    "ralphinho-rfc-pipeline": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.84
+    },
+    "regex-vs-llm-structured-text": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.77
+    },
+    "repo-scan": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC"
+      ],
+      "actual_subs": [
+        "research"
+      ],
+      "avg_confidence": 0.78
+    },
+    "rules-distill": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.82
+    },
+    "safety-guard": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "GS"
+      ],
+      "actual_subs": [
+        "security",
+        "security"
+      ],
+      "avg_confidence": 0.74
+    },
+    "santa-method": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "QA",
+        "QA"
+      ],
+      "avg_confidence": 0.84
+    },
+    "search-first": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "research",
+        "research"
+      ],
+      "avg_confidence": 0.65
+    },
+    "security-review": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "ECC"
+      ],
+      "actual_subs": [
+        "security",
+        "security"
+      ],
+      "avg_confidence": 0.86
+    },
+    "security-scan": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "security",
+        "security"
+      ],
+      "avg_confidence": 0.86
+    },
+    "skill-comply": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.72
+    },
+    "skill-stocktake": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        ""
+      ],
+      "actual_subs": [
+        "QA",
+        "-"
+      ],
+      "avg_confidence": 0.41
+    },
+    "springboot-patterns": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "CC"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "-"
+      ],
+      "avg_confidence": 0.86
+    },
+    "springboot-security": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "CC",
+        "GS"
+      ],
+      "actual_subs": [
+        "-",
+        "security"
+      ],
+      "avg_confidence": 0.83
+    },
+    "springboot-tdd": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "CC"
+      ],
+      "actual_subs": [
+        "-",
+        "-"
+      ],
+      "avg_confidence": 0.86
+    },
+    "springboot-verification": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "QA"
+      ],
+      "avg_confidence": 0.84
+    },
+    "strategic-compact": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.84
+    },
+    "tdd-workflow": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "SP",
+        "SP"
+      ],
+      "actual_subs": [
+        "EngManager",
+        "debug"
+      ],
+      "avg_confidence": 0.86
+    },
+    "team-builder": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS",
+        "GS"
+      ],
+      "actual_subs": [
+        "CEO",
+        "other"
+      ],
+      "avg_confidence": 0.69
+    },
+    "token-budget-advisor": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        ""
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.0
+    },
+    "verification-loop": {
+      "strict_pass": false,
+      "reasonable_pass": false,
+      "actual_fws": [
+        "CC"
+      ],
+      "actual_subs": [
+        "-"
+      ],
+      "avg_confidence": 0.72
+    },
+    "visa-doc-translate": {
+      "strict_pass": false,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "GS"
+      ],
+      "actual_subs": [
+        "EngManager"
+      ],
+      "avg_confidence": 0.91
+    },
+    "x-api": {
+      "strict_pass": true,
+      "reasonable_pass": true,
+      "actual_fws": [
+        "ECC",
+        "ECC"
+      ],
+      "actual_subs": [
+        "other",
+        "research"
+      ],
+      "avg_confidence": 0.69
+    }
+  }
+}

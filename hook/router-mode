@@ -1,0 +1,41 @@
+#!/bin/bash
+# Router mode switcher. Aligns with decision-taxonomy.md M1-M6.
+#
+# Modes:
+#   auto    — show router decision on every prompt (verbose; for debugging)
+#   silent  — show only when ACTION REQUIRED / human_confirm / OFFLINE warn (default)
+#   off     — bypass entirely; equivalent to no hook installed
+#
+# Usage:
+#   router-mode              # show current mode
+#   router-mode silent       # set to silent (recommended default)
+#   router-mode off          # disable router for this and future sessions
+#   router-mode auto         # verbose mode (debugging / training data collection)
+
+CONFIG_DIR="${ROUTER_HOOK_CONFIG:-$HOME/.config/router-hook}"
+MODE_FILE="$CONFIG_DIR/mode"
+mkdir -p "$CONFIG_DIR"
+
+case "${1:-status}" in
+  auto|silent|off)
+    echo "$1" > "$MODE_FILE"
+    echo "Router mode: $1"
+    case "$1" in
+      auto)   echo "  -> Every prompt injects 🧭 Router -> ... line" ;;
+      silent) echo "  -> Only surfaces on [ACTION REQUIRED] / human_confirm / OFFLINE" ;;
+      off)    echo "  -> Hook fully disabled; runtime-guard and completion-check also off" ;;
+    esac
+    ;;
+  status|"")
+    current="$(cat "$MODE_FILE" 2>/dev/null || echo silent)"
+    echo "Router mode: $current"
+    ;;
+  -h|--help|help)
+    sed -n '2,15p' "$0" | sed 's/^# \?//'
+    ;;
+  *)
+    echo "Unknown mode: $1"
+    echo "Usage: router-mode [auto|silent|off|status]"
+    exit 1
+    ;;
+esac
