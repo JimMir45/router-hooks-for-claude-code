@@ -1,0 +1,4 @@
+{"id":"triage_001","category":"triage","subtype":"execution","prompt":"用 TDD 实现一个 LRU 缓存,要求 80% 单测覆盖率,先写测试再写实现","expected":{"task_type":"execution","framework":"SP"},"note":"明确执行类:TDD + coverage 是 SP 5-phase 的标志信号"}
+{"id":"triage_002","category":"triage","subtype":"decision","prompt":"我们这个 RAG pipeline 的 metadata,Postgres 和 MongoDB 怎么选?要支持复杂 filter + embedding","expected":{"task_type":"decision","framework":"GS"},"note":"决策类:技术选型,GS plan-eng-review / forcing question"}
+{"id":"triage_003","category":"triage","subtype":"domain","prompt":"调研一下 PostgreSQL 16 的最新进展,顺便看看我们的慢查询能不能优化","expected":{"task_type":"domain","framework":"ECC"},"note":"领域类:research + 性能诊断,ECC deep-research / debug"}
+{"id":"triage_004","category":"triage","subtype":"simple","prompt":"刚才那个文件第 42 行的拼写错了,fix typo","expected":{"task_type":"simple","framework":"CC"},"note":"简单类:单行 typo,CC 主 session 直接处理,不派 sub-agent"}

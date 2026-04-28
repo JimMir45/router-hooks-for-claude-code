@@ -37,12 +37,15 @@ venv/
 # Test output — keep main result files committed (they are deliverables);
 # only ignore local intermediate logs.
 tests/results/*.log
+tests/results/.isolated-home/
+tests/results/.uninstall-test/
 
-# Demo artifacts — keep v2 keynote + whitepaper + script (deliverables);
-# only ignore old v1 backup and intermediate generated files.
-demo/presentation-v1.html.bak
-demo/presentation.html
-demo/*.tmp.html
+# Active plan is per-worktree session state, not part of the public repo
+.claude/
+
+# Demo deliverables — keynote and whitepaper were one-off presentation artifacts,
+# not part of the open-source deliverable. Keep them locally.
+demo/
 
 # Internal working notes (not meant for the public repo)
 NEXT-STEPS.md

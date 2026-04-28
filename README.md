@@ -84,6 +84,30 @@ router-mode off     # fully disabled
 
 ---
 
+## Experimental: Director-Worker dispatch
+
+Optional second-stage layer on top of the router. When enabled, instead of injecting framework instructions into the main session, the hook tells the main session to **dispatch a sub-agent via Claude Code's Agent tool** — sub-agent reads the framework's SKILL.md in an isolated context, runs the workflow, returns a structured `[OUTCOME]` envelope.
+
+**Why**: large workflows (5-phase TDD, plan-eng-review forcing question, deep-research) consume tens of thousands of tokens reading SKILL.md and tool calls. Director-Worker keeps that load in sub-agent's isolated context, so the main session only sees the summary.
+
+**Three modes** (toggle with `director-mode` CLI):
+```bash
+director-mode                     # show current mode + 24h hook/outcome stats
+director-mode off                 # bypass: pure v3.1 inject behavior (recommended initial)
+director-mode dispatch_high_conf  # dispatch only when router confidence >= 0.7
+director-mode dispatch_all        # dispatch every non-CC task (high-trust mode)
+```
+
+**Instrumentation**:
+- Hook decisions → `~/.claude/router-logs/director.jsonl`
+- Sub-agent outcomes → `~/.claude/router-logs/director-outcomes.jsonl` (main session calls `director-record-outcome` after each Agent return)
+
+**Roll back**: `bash ~/.router-hook/uninstall-director.sh` — reverts router.py and removes Director-Worker modules in ~110ms. Your v3.1 router setup keeps working.
+
+**Status**: experimental. Validated end-to-end on SP/GS/ECC with three small real tasks; Day 1-7 evaluation is in `tests/results/day7-final-dashboard.md`. Default install registers the files but does NOT switch the mode — user must opt in via `director-mode dispatch_high_conf`.
+
+---
+
 ## Troubleshooting
 
 **Hook not triggering**

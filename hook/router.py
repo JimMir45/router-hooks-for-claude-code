@@ -16,6 +16,19 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+# === DIRECTOR-WORKER PATCH START ===
+# Inserted by Day 2-5. Remove with: bash hook/uninstall-director.sh
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from task_classifier import classify as _classify_task
+except Exception:
+    _classify_task = None
+try:
+    from dispatch_subagent import build_dispatch_instruction as _build_dispatch
+except Exception:
+    _build_dispatch = None
+# === DIRECTOR-WORKER PATCH END ===
+
 LOG_PATH = Path.home() / ".claude" / "router-logs" / "router.log"
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -381,6 +394,14 @@ def main():
     # v3.1: hard-regex defense-in-depth — overrides LLM if destructive keywords present
     decision = hard_regex_override(prompt, decision)
 
+    # === DIRECTOR-WORKER ANNOTATE START ===
+    if _classify_task is not None and not decision.get("error"):
+        try:
+            decision.update(_classify_task(prompt, decision))
+        except Exception:
+            pass
+    # === DIRECTOR-WORKER ANNOTATE END ===
+
     log_entry = {
         "ts": datetime.datetime.now().isoformat(timespec="seconds"),
         "session_id": payload.get("session_id", "")[:16],
@@ -408,7 +429,23 @@ def main():
         sys.exit(0)
 
     if should_render(decision, mode):
-        print(render_injection(decision))
+        # === DIRECTOR-WORKER DISPATCH START ===
+        # Original-v3.1: print(render_injection(decision))
+        dispatch_text = ""
+        if _build_dispatch is not None:
+            try:
+                d = _build_dispatch(prompt, decision)
+                if d.get("mode") == "dispatch" and d.get("text"):
+                    dispatch_text = d["text"]
+                    if d.get("sub_agent_prompt"):
+                        dispatch_text += "\n\n--- sub_agent_prompt ---\n" + d["sub_agent_prompt"]
+            except Exception:
+                pass
+        if dispatch_text:
+            print(dispatch_text)
+        else:
+            print(render_injection(decision))
+        # === DIRECTOR-WORKER DISPATCH END ===
     sys.exit(0)
 
 

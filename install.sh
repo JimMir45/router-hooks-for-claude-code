@@ -101,6 +101,12 @@ HOOK_FILES=(
   "hook/render-report.py"
   "hook/cleanup-reports.py"
   "hook/router-mode"
+  # Director-Worker (experimental, default off in dispatch_high_conf via director-mode CLI)
+  "hook/task_classifier.py"
+  "hook/dispatch_subagent.py"
+  "hook/director-mode"
+  "hook/director-record-outcome"
+  "hook/uninstall-director.sh"
 )
 
 if $DRY_RUN; then

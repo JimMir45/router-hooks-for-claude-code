@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""
+director-record-outcome — 主 session 在 sub-agent 跑完后调一次,记录 outcome 端数据
+
+用法:
+  director-record-outcome --status success --framework SP --skill test-driven-development \\
+                          --tokens 46919 --duration-ms 54433 --tool-uses 7
+
+字段(必填):
+  --status        success | partial | failed | empty   (parse 自 OUTCOME envelope)
+  --framework     SP | GS | ECC                         (从 dispatch text 拿)
+  --skill         skill 名(从 dispatch text 拿)
+
+可选:
+  --tokens        sub-agent 消耗 tokens 数(从 Agent 返回的 usage 块)
+  --duration-ms   sub-agent 跑了多久
+  --tool-uses     sub-agent 调了几次工具
+  --prompt-hash   prompt 的 hash(用来 join 同一 dispatch 的 hook 事件)
+  --fallback-to   inject | retry | abort  (若 status≠success 时主 session 怎么处理)
+  --note          自由备注
+
+数据写到: ~/.claude/router-logs/director-outcomes.jsonl
+"""
+
+import argparse
+import datetime
+import json
+import sys
+from pathlib import Path
+
+OUTCOMES_LOG = Path.home() / ".claude" / "router-logs" / "director-outcomes.jsonl"
+VALID_STATUS = ("success", "partial", "failed", "empty")
+VALID_FW = ("SP", "GS", "ECC", "CC")
+VALID_FALLBACK = ("inject", "retry", "abort", "none")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Record sub-agent outcome from main session")
+    ap.add_argument("--status", required=True, choices=VALID_STATUS)
+    ap.add_argument("--framework", required=True, choices=VALID_FW)
+    ap.add_argument("--skill", required=True)
+    ap.add_argument("--tokens", type=int, default=None)
+    ap.add_argument("--duration-ms", type=int, default=None)
+    ap.add_argument("--tool-uses", type=int, default=None)
+    ap.add_argument("--prompt-hash", default=None)
+    ap.add_argument("--fallback-to", choices=VALID_FALLBACK, default="none")
+    ap.add_argument("--note", default=None)
+    args = ap.parse_args()
+
+    event = {
+        "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+        "status": args.status,
+        "framework": args.framework,
+        "skill": args.skill,
+        "tokens": args.tokens,
+        "duration_ms": args.duration_ms,
+        "tool_uses": args.tool_uses,
+        "prompt_hash": args.prompt_hash,
+        "fallback_to": args.fallback_to,
+        "note": args.note,
+    }
+
+    OUTCOMES_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with OUTCOMES_LOG.open("a") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    print(f"recorded: {args.status} {args.framework}/{args.skill}", file=sys.stderr)
+    if args.tokens:
+        print(f"  tokens={args.tokens} duration={args.duration_ms}ms tool_uses={args.tool_uses}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

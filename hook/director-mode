@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""
+director-mode — 切换 Director-Worker 工作模式 + 看埋点统计
+
+用法:
+  director-mode                          # 显示当前模式 + 最近 24h 统计
+  director-mode off                      # 关闭 dispatch,全走 v3.1 inject
+  director-mode dispatch_high_conf       # 仅 conf>=0.7 派 sub-agent
+  director-mode dispatch_all             # 默认:全部非 simple 任务派 sub-agent
+  director-mode log [N]                  # 查看最近 N 条 (默认 20) 埋点
+  director-mode stats [HOURS]            # 统计窗口 (默认 24h)
+"""
+
+import json
+import sys
+import datetime
+from collections import Counter
+from pathlib import Path
+
+MODE_FILE = Path.home() / ".config" / "router-hook" / "director_mode"
+LOG_FILE = Path.home() / ".claude" / "router-logs" / "director.jsonl"
+OUTCOMES_FILE = Path.home() / ".claude" / "router-logs" / "director-outcomes.jsonl"
+VALID_MODES = ("off", "dispatch_high_conf", "dispatch_all")
+
+
+def cmd_set(mode: str):
+    if mode not in VALID_MODES:
+        print(f"invalid mode: {mode}", file=sys.stderr)
+        print(f"valid: {' | '.join(VALID_MODES)}", file=sys.stderr)
+        sys.exit(2)
+    MODE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    MODE_FILE.write_text(mode)
+    print(f"director_mode = {mode}")
+
+
+def cmd_show():
+    mode = MODE_FILE.read_text().strip() if MODE_FILE.exists() else "dispatch_all (default)"
+    print(f"director_mode: {mode}")
+    print(f"  config: {MODE_FILE}")
+    print(f"  log:    {LOG_FILE}")
+    cmd_stats(24)
+
+
+def cmd_log(n: int = 20):
+    if not LOG_FILE.exists():
+        print("(no events yet)")
+        return
+    lines = LOG_FILE.read_text().splitlines()
+    for line in lines[-n:]:
+        try:
+            e = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        print(f"  {e.get('ts','?')} fw={e.get('framework','?'):4} "
+              f"tt={e.get('task_type','?'):10} mode={e.get('dispatch_mode','?'):8} "
+              f"conf={e.get('confidence',0):.2f} reason={e.get('reason','')}")
+
+
+def cmd_stats(hours: int = 24):
+    if not LOG_FILE.exists():
+        print(f"(no events in last {hours}h)")
+        return
+    cutoff = datetime.datetime.now() - datetime.timedelta(hours=hours)
+    events = []
+    for line in LOG_FILE.read_text().splitlines():
+        try:
+            e = json.loads(line)
+            ts = datetime.datetime.fromisoformat(e["ts"])
+            if ts >= cutoff:
+                events.append(e)
+        except Exception:
+            continue
+    print(f"\n--- HOOK 决策侧 last {hours}h: {len(events)} events ---")
+    if events:
+        by_mode = Counter(e["dispatch_mode"] for e in events)
+        by_fw = Counter(e["framework"] for e in events)
+        print("  dispatch_mode:", "  ".join(f"{k}={v}" for k, v in by_mode.most_common()))
+        print("  framework:    ", "  ".join(f"{k}={v}" for k, v in by_fw.most_common()))
+
+    # outcome 端 join
+    outcomes = []
+    if OUTCOMES_FILE.exists():
+        for line in OUTCOMES_FILE.read_text().splitlines():
+            try:
+                e = json.loads(line)
+                ts = datetime.datetime.fromisoformat(e["ts"])
+                if ts >= cutoff:
+                    outcomes.append(e)
+            except Exception:
+                continue
+
+    print(f"\n--- SUB-AGENT outcome last {hours}h: {len(outcomes)} runs ---")
+    if not outcomes:
+        print("  (sub-agent 完成后请调 director-record-outcome 记录)")
+        return
+
+    by_status = Counter(o["status"] for o in outcomes)
+    by_fw_o = Counter(o["framework"] for o in outcomes)
+    success_rate = 100 * by_status["success"] / len(outcomes)
+    total_tokens = sum(o.get("tokens", 0) or 0 for o in outcomes)
+    total_duration_s = sum(o.get("duration_ms", 0) or 0 for o in outcomes) / 1000
+    avg_tool_uses = sum(o.get("tool_uses", 0) or 0 for o in outcomes) / len(outcomes)
+    print(f"  status:        {dict(by_status)} (success rate {success_rate:.0f}%)")
+    print(f"  framework:     {dict(by_fw_o)}")
+    print(f"  isolated tokens: {total_tokens:,} (这些 token 没进主 session)")
+    print(f"  total duration: {total_duration_s:.1f}s")
+    print(f"  avg tool_uses: {avg_tool_uses:.1f}")
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        cmd_show()
+        return
+    cmd, *rest = args
+    if cmd in VALID_MODES:
+        cmd_set(cmd)
+    elif cmd == "log":
+        n = int(rest[0]) if rest else 20
+        cmd_log(n)
+    elif cmd == "stats":
+        h = int(rest[0]) if rest else 24
+        cmd_stats(h)
+    else:
+        print(__doc__)
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()
