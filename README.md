@@ -1,5 +1,7 @@
 # Router Hook for Claude Code
 
+**English** · [中文](README.zh.md)
+
 A **Claude Code hook system** that automatically classifies every prompt through a 5-layer intent router, routes it to the right AI framework, and enforces runtime guardrails — so Claude spends less time asking you what to do and more time doing it right.
 
 ---
@@ -43,15 +45,15 @@ picks framework:            Blacklist checks:             Hedging word check:
 ## Install
 
 ```bash
-git clone https://github.com/YOUR_ORG/router-hook
-cd router-hook
+git clone https://github.com/JimMir45/router-hooks-for-claude-code
+cd router-hooks-for-claude-code
 ./install.sh
 ```
 
 Or one-liner (after you trust the source):
 
 ```bash
-git clone https://github.com/YOUR_ORG/router-hook && cd router-hook && ./install.sh
+git clone https://github.com/JimMir45/router-hooks-for-claude-code && cd router-hooks-for-claude-code && ./install.sh
 ```
 
 The installer is idempotent — safe to run twice. It will not overwrite existing config.
