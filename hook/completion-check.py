@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 Stop hook: completion sanity check.
-Implements autonomy-rules.md §self-verify vs user-verify.
+Implements rules/common/autonomy-rules.md §自验 vs 你验.
 
-Goal: catch false completion claims — when Claude says 'done' but:
-  (a) used hedging words: "should be OK" / "probably" / "looks fine"
-  (b) active-plan.md still has unchecked [Agent self-verify] items
+Goal: catch假宣告完成 — when Claude says 'done' but:
+  (a) used hedging words: 应该OK / 估计 / 看起来 / 可能没问题
+  (b) active-plan.md still has unchecked [Agent 自验] items
 
 Block decision injects a reason string back into Claude, asking it to
 actually run the verification before claiming completion.
@@ -21,11 +21,9 @@ import sys
 import time
 from pathlib import Path
 
-_CONFIG_BASE = Path(os.environ.get("ROUTER_HOOK_CONFIG", Path.home() / ".config" / "router-hook"))
-MODE_FILE = _CONFIG_BASE / "mode"
-
 LOG = Path.home() / ".claude" / "router-logs" / "completion-check.log"
 LOG.parent.mkdir(parents=True, exist_ok=True)
+MODE_FILE = Path.home() / ".config" / "router-hook" / "mode"
 
 
 def load_mode():
@@ -36,35 +34,20 @@ def load_mode():
 
 
 # Hedging words that often hide unverified claims.
-# Only fires on explicit "done + hedge" combos or compact "should be OK" phrases.
-# Bilingual: catches both English and Chinese hedge patterns.
+# v2.1 (2026-04-27): added English hedges (should/probably/likely) and "没问题" as completion-state word.
+# v2 → v2.1: B2 unit test (80 cases) found 2 FN — both fixed here.
 HEDGE_PATTERNS = [
-    # (a) completion claim + hedge word nearby
-    (re.compile(
-        r"(completed?|done|finished|fixed|implemented|"
-        r"完成|搞定|做完|改完|跑通)[^\n]{0,25}?"
-        r"(should|probably|maybe|might\s*be|perhaps|likely|"
-        r"应该|估计|看起来|可能|大概|理论上)", re.I),
-     "completion claim with hedging word"),
-    (re.compile(
-        r"(should|probably|maybe|might\s*be|perhaps|likely|"
-        r"应该|估计|看起来|可能|大概|理论上)[^\n]{0,25}?"
-        r"(completed?|done|finished|fixed|implemented|"
-        r"完成了|搞定了|做完了|改完了|跑通了)", re.I),
-     "completion claim with hedging word (hedge first)"),
-    # (b) compact optimistic phrases
-    (re.compile(
-        r"(should|probably|maybe|likely|应该|估计|看起来|大概)"
-        r"[^\n]{0,3}?(be\s*fine|be\s*ok|work|no\s*issues?|all\s*good|"
-        r"没问题|没事|可以了|搞定了|没什么问题)", re.I),
-     "unverified optimistic assertion"),
-    # (c) explicitly says 'didn't test' but claims done
-    (re.compile(
-        r"(didn.t|haven.t|without|没.{0,3})"
-        r"(test|verify|run|try|测试|验证|跑|试)"
-        r".{0,30}?(done|complete|finished|works?|fine|ok|"
-        r"完成|可以|没问题)", re.I),
-     "claiming done without self-verification"),
+    # (a) 完成宣告 + 模糊词紧邻(中文 + 英文)
+    (re.compile(r"(完成|done|完毕|搞定|结束|跑完|跑通|改完|修完|done了|finished|fixed|实现完|做完)[^\n]{0,25}?(应该|估计|看起来|可能|大概|大概率|理论上|should|probably|likely|maybe|perhaps|might\s*be)", re.I),
+     "完成宣告含模糊词"),
+    (re.compile(r"(应该|估计|看起来|可能|大概|理论上|should|probably|likely|maybe|might\s*be)[^\n]{0,25}?(完成了|done\s*了?|完毕了|搞定了|跑完了|跑通了|改完了|修完了|做完了|finished|fixed|ok|fine|good|work|no\s*issue)", re.I),
+     "完成宣告含模糊词(模糊词在前)"),
+    # (b) 紧凑乐观短语 — "应该没问题 / should be ok / 估计搞定 / 看起来没事"
+    (re.compile(r"(应该|估计|看起来|大概|should|probably|likely|maybe|might\s*be)[^\n]{0,3}?(没问题|没事|没错|没毛病|不会有问题|ok\s*了?|fine|good|可以了|搞定了|没什么问题|no\s*issue|all\s*good)", re.I),
+     "未验证的乐观断言(含'应该没问题/should be ok'套语)"),
+    # (c) 显式说"没自验/没跑测试"还宣告完成(完成动作 + 完成状态都覆盖)
+    (re.compile(r"(没.{0,3}(测试|verify|跑|试|验证|run|tested)).{0,30}?(完成|done|搞定|可以|没问题|没事|fine|ok|work|fixed)", re.I),
+     "未自验就宣告完成"),
 ]
 
 
@@ -72,22 +55,57 @@ def hedge_check(last_assistant_text: str):
     if not last_assistant_text:
         return None
     for rx, label in HEDGE_PATTERNS:
-        if rx.search(last_assistant_text):
+        m = rx.search(last_assistant_text)
+        if m:
             return {
                 "decision": "block",
-                "reason": (
-                    f"Self-verify not done: detected [{label}]\n"
-                    f"Per autonomy-rules.md §self-verify vs user-verify, "
-                    f"completion claims must be based on script exit codes.\n"
-                    f"Please actually run verify/test commands and show exit code "
-                    f"instead of saying 'should be OK'."
-                ),
+                "reason": f"自验未过: 检测到[{label}]\n"
+                          f"按 autonomy-rules.md §自验 vs 你验,完成宣告必须基于退出码可判断的脚本。\n"
+                          f"请实际跑 verify/test 命令并贴出 exit code,而不是说'应该 OK'。",
+                "_pattern_label": label,
+                "_matched_text": m.group(0)[:120],
             }
     return None
 
 
+def detect_execution_mode(transcript_path: str, lookback: int = 30) -> str:
+    """Scan recent transcript for tool uses.
+    - 'execution' if found Edit/Write/Bash/MultiEdit in last N assistant turns
+    - 'discussion' otherwise
+    Returns 'unknown' if transcript unreadable."""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return "unknown"
+    EXECUTION_TOOLS = {"Edit", "Write", "Bash", "MultiEdit", "NotebookEdit"}
+    try:
+        with open(transcript_path) as f:
+            lines = f.readlines()
+    except Exception:
+        return "unknown"
+    asst_seen = 0
+    for line in reversed(lines[-200:]):  # 上限避免超长 transcript
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if obj.get("type") != "assistant":
+            continue
+        asst_seen += 1
+        msg = obj.get("message", {})
+        content = msg.get("content", [])
+        if isinstance(content, list):
+            for c in content:
+                if isinstance(c, dict) and c.get("type") == "tool_use":
+                    if c.get("name") in EXECUTION_TOOLS:
+                        return "execution"
+        if asst_seen >= lookback:
+            break
+    return "discussion"
+
+
 def active_plan_check(transcript_path: str):
-    """If cwd has active-plan.md with unchecked [Agent self-verify] items, block."""
+    """If cwd has active-plan.md with unchecked [Agent 自验] items, block."""
+    # transcript_path is in /tmp, try to find cwd from latest user message? skip.
+    # Instead, check current working dir
     cwd = os.getcwd()
     plan = Path(cwd) / ".claude" / "active-plan.md"
     if not plan.exists():
@@ -96,18 +114,14 @@ def active_plan_check(transcript_path: str):
         text = plan.read_text()
     except Exception:
         return None
-    # Matches both English [Agent self-verify] and Chinese [Agent 自验]
-    unchecked = re.findall(
-        r"^\s*-\s*\[\s*\].*\[Agent\s*(self-verify|自验)\].*$", text, re.M
-    )
+    # Find lines with `[Agent 自验]` and check if checkbox is `[ ]`
+    unchecked = re.findall(r"^\s*-\s*\[\s*\].*\[Agent\s*自验\].*$", text, re.M)
     if unchecked:
         return {
             "decision": "block",
-            "reason": (
-                f"active-plan.md still has {len(unchecked)} unchecked [Agent self-verify] items:\n"
-                + "\n".join(f"  * {u.strip()[:120]}" for u in unchecked[:5])
-                + "\nPlease run each verification script, check them off, then claim completion."
-            ),
+            "reason": f"active-plan.md 还有 {len(unchecked)} 项 [Agent 自验] 未勾选:\n"
+                      + "\n".join(f"  • {u.strip()[:120]}" for u in unchecked[:5])
+                      + "\n请逐项跑验证脚本,通过后再勾选,然后再宣告完成。",
         }
     return None
 
@@ -119,6 +133,7 @@ def get_last_assistant_text(transcript_path: str) -> str:
     try:
         with open(transcript_path) as f:
             lines = f.readlines()
+        # walk back to find last assistant text
         for line in reversed(lines[-40:]):
             try:
                 obj = json.loads(line)
@@ -138,14 +153,22 @@ def get_last_assistant_text(transcript_path: str) -> str:
     return ""
 
 
-def log(decision):
+def log(decision, mode_hint: str = ""):
     try:
+        entry = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "decision": decision.get("decision", "pass") if decision else "pass",
+            "reason": decision.get("reason", "")[:200] if decision else "",
+        }
+        if decision:
+            if decision.get("_pattern_label"):
+                entry["pattern_label"] = decision["_pattern_label"]
+            if decision.get("_matched_text"):
+                entry["matched_text"] = decision["_matched_text"]
+        if mode_hint:
+            entry["exec_mode"] = mode_hint
         with open(LOG, "a") as f:
-            f.write(json.dumps({
-                "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "decision": decision.get("decision", "pass") if decision else "pass",
-                "reason": decision.get("reason", "")[:200] if decision else "",
-            }, ensure_ascii=False) + "\n")
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass
 
@@ -158,23 +181,38 @@ def main():
     except Exception:
         sys.exit(0)
 
+    # Avoid infinite loops: if Stop hook itself is the trigger, don't re-block
     if payload.get("stop_hook_active"):
         sys.exit(0)
 
     transcript_path = payload.get("transcript_path", "")
     last_text = get_last_assistant_text(transcript_path)
+    mode = detect_execution_mode(transcript_path)
 
-    for check in (
-        lambda: hedge_check(last_text),
-        lambda: active_plan_check(transcript_path),
+    for check_name, check in (
+        ("hedge", lambda: hedge_check(last_text)),
+        ("active_plan", lambda: active_plan_check(transcript_path)),
     ):
         result = check()
-        if result and result.get("decision") == "block":
-            log(result)
-            print(json.dumps(result, ensure_ascii=False))
+        if not result or result.get("decision") != "block":
+            continue
+        # 讨论模式 + hedge 类拦截 → 降级为 pass(active_plan 仍 block,因为 plan 跨模式都该卡)
+        if mode == "discussion" and check_name == "hedge":
+            # 不 print decision(放行),但留下日志便于复盘
+            result_pass = {
+                "decision": "pass",
+                "reason": f"[downgraded from block] mode=discussion, label={result.get('_pattern_label','?')}",
+                "_pattern_label": result.get("_pattern_label"),
+                "_matched_text": result.get("_matched_text"),
+            }
+            log(result_pass, mode_hint=mode)
             sys.exit(0)
+        log(result, mode_hint=mode)
+        print(json.dumps({"decision": result["decision"], "reason": result["reason"]},
+                         ensure_ascii=False))
+        sys.exit(0)
 
-    log(None)
+    log(None, mode_hint=mode)
     sys.exit(0)
 
 

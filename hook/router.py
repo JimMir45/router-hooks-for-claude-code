@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Claude Code UserPromptSubmit hook: 5-layer intent router.
-Backend: any OpenAI-compatible chat completion endpoint (model defaults to gpt-4o-mini).
-Configure your endpoint + key in ~/.config/router-hook/keys.json — see config/keys.json.example.
-Logs every decision to ~/.claude/router-logs/router.log for iteration analysis.
+Backend: sub2api (https://sub2api.lvshuo.club) using gpt-4o-mini.
+Auth: API key from ~/.codex-proxy/auth.json (OPENAI_API_KEY).
+Logs every decision to ~/.claude/router-logs/router.log for v4 iteration.
 """
 import json
 import os
@@ -14,6 +14,7 @@ import hashlib
 import datetime
 import urllib.request
 import urllib.error
+import subprocess
 from pathlib import Path
 
 # === DIRECTOR-WORKER PATCH START ===
@@ -34,7 +35,7 @@ LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = Path.home() / ".config" / "router-hook" / "keys.json"
 MODE_FILE = Path.home() / ".config" / "router-hook" / "mode"
-TIMEOUT = 10  # seconds per provider; total worst-case ~20s with fallback
+TIMEOUT = 20  # seconds per provider; total worst-case ~40s with fallback (raised for local ollama)
 
 # Force socket-level timeout so DNS/connect also time out (urlopen timeout is read-only)
 import socket
@@ -88,12 +89,15 @@ def load_providers():
                 )
             except Exception:
                 key = ""
-        if key:
+        needs_key = p.get("type", "openai") != "ollama"
+        if key or not needs_key:
             out.append({
                 "name": p.get("name", slot),
                 "endpoint": p["endpoint"],
                 "model": p.get("model", "gpt-4o-mini"),
                 "key": key,
+                "type": p.get("type", "openai"),
+                "max_tokens": p.get("max_tokens", 250),
             })
     return out
 
@@ -138,6 +142,37 @@ L3.5 ECC fallback 偏好:工程决策类(architecture/api-design/deployment) 当
 fallback 优先 ECC(具体技术能力)而不是 CC,因为 GS 给出方向后落地需要 ECC 工具。
 
 L4 默认 → CC
+
+关键边界示例(小模型易错,务必内化):
+
+▸ 用户体验反馈/吐槽 — 区分有无产品视角:
+  "勉强,要是能加歌词就能跟唱了" → GS / Designer (产品体验改进建议,带角色视角)
+  "整复杂了,只抓主旋律就行了" → CC (纯吐槽+简化诉求,不带角色)
+  规则:含"产品建议/角色视角" → GS-Designer/CEO; 纯反馈无建议 → CC
+
+▸ 产品调研 vs 技术调研:
+  "ktv/音乐领域有哪些好产品,蓝海调研" → GS / CEO (产品赛道战略)
+  "RAG 框架对比,LangChain vs LlamaIndex" → ECC / research (技术工具)
+  规则:研究"做什么/做哪个市场" → GS-CEO; 研究"怎么做/用什么工具" → ECC-research
+
+▸ 多平台/多模块迁移 vs SP:
+  "把 18000 平台功能迁移到 8910,拆分评测平台" → GS / EngManager (架构决策)
+  "把 auth 模块抽出策略模式" → SP (实现已定的多文件改动)
+  规则:决定"怎么拆分/迁移" → GS-EngManager; 实现"已定的多文件改动" → SP
+
+▸ 测试方案设计 vs 测试执行:
+  "为小程序设计测试方案:矩阵+冒烟+回归" → GS / QA (策略设计)
+  "跑下 pytest 看哪个 red" → ECC / debug (执行/排查)
+  规则:设计测试矩阵/策略 → GS-QA; 跑/调试已有测试 → ECC
+
+▸ 工作流程纠正 vs 闲聊:
+  "刚脑爆完直接开干?先去 claude-mem 拉记忆" → GS / EngManager (流程纠正)
+  规则:对方法/流程/做事顺序的反馈 → GS-EngManager; 对结果纯吐槽 → CC
+
+▸ 简单执行确认 vs 真实工程任务:
+  "请提交 M8" / "启动 agent 跑这 5 个用例" → CC (任务延续/确认)
+  "线上 500 错误,定位下原因" → ECC / debug (需技术能力分析)
+  规则:延续上文的确认/触发 → CC; 需要技术分析的新工作 → ECC
 
 Confidence 校准:simple+chore+单turn ≤0.85; 敏感 ≤0.6; exploratory ≤0.55
 
@@ -222,30 +257,49 @@ def fast_path(prompt: str):
 
 
 def call_one(provider: dict, prompt: str):
-    body = json.dumps({
-        "model": provider["model"],
-        "max_tokens": 250,
-        "temperature": 0,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": ROUTER_SYSTEM},
-            {"role": "user", "content": prompt[:3000]},
-        ],
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        provider["endpoint"],
-        data=body,
-        headers={
-            "Authorization": f"Bearer {provider['key']}",
-            "Content-Type": "application/json",
-            "User-Agent": "router-hook/1.0 (claude-code)",
-        },
-    )
+    ptype = provider.get("type", "openai")
+    if ptype == "ollama":
+        body_obj = {
+            "model": provider["model"],
+            "messages": [
+                {"role": "system", "content": ROUTER_SYSTEM},
+                {"role": "user", "content": prompt[:3000]},
+            ],
+            "stream": False,
+            "think": False,
+            "format": "json",
+            "options": {
+                "num_predict": provider.get("max_tokens", 400),
+                "temperature": 0,
+            },
+        }
+    else:
+        body_obj = {
+            "model": provider["model"],
+            "max_tokens": provider.get("max_tokens", 250),
+            "temperature": 0,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": ROUTER_SYSTEM},
+                {"role": "user", "content": prompt[:3000]},
+            ],
+        }
+    body = json.dumps(body_obj).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "router-hook/1.0 (claude-code)",
+    }
+    if provider.get("key"):
+        headers["Authorization"] = f"Bearer {provider['key']}"
+    req = urllib.request.Request(provider["endpoint"], data=body, headers=headers)
     t0 = time.time()
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             resp = json.loads(r.read())
-        text = resp["choices"][0]["message"]["content"].strip()
+        if ptype == "ollama":
+            text = (resp.get("message", {}) or {}).get("content", "").strip()
+        else:
+            text = resp["choices"][0]["message"]["content"].strip()
         if text.startswith("```"):
             text = text.strip("`")
             if text.lower().startswith("json"):
@@ -263,17 +317,39 @@ def call_one(provider: dict, prompt: str):
                 "_latency_ms": int((time.time() - t0) * 1000)}
 
 
+# === P1 二阶路由 (2026-05-08 引入) ===
+# 当 primary(OpenAI 系) 返回的 confidence < 阈值,自动用更强模型(gpt-5.5)重投
+UPGRADE_THRESHOLD = 0.7
+UPGRADE_MODEL_DEFAULT = "gpt-5.5"
+
+
 def call_router(prompt: str):
     providers = load_providers()
     if not providers:
         return {"error": "no_providers_configured"}
-    # Try primary, fall back through the chain on error
     last_error = None
     for prov in providers:
         decision = call_one(prov, prompt)
-        if not decision.get("error"):
-            return decision
-        last_error = decision
+        if decision.get("error"):
+            last_error = decision
+            continue
+        # 二阶升级:仅当 primary 是 OpenAI 系 + confidence 低 + provider 没禁用升级时
+        upgrade_model = prov.get("upgrade_model", UPGRADE_MODEL_DEFAULT)
+        if (prov.get("type", "openai") == "openai"
+                and upgrade_model
+                and decision.get("confidence", 1.0) < UPGRADE_THRESHOLD):
+            upgraded_prov = {**prov, "model": upgrade_model}
+            upg = call_one(upgraded_prov, prompt)
+            if not upg.get("error"):
+                upg["_upgraded_from"] = prov.get("model")
+                upg["_upgrade_reason"] = (
+                    f"primary_conf={decision.get('confidence'):.2f}<{UPGRADE_THRESHOLD}"
+                )
+                return upg
+            # 升级失败,保留原决策(标注一下)
+            decision["_upgrade_attempted"] = True
+            decision["_upgrade_failed"] = (upg.get("error", "?") or "?")[:60]
+        return decision
     return last_error or {"error": "all_providers_failed"}
 
 
@@ -371,6 +447,71 @@ def render_injection(decision: dict) -> str:
     return "\n".join(lines)
 
 
+# === P0 Provider 健康监控 (2026-05-08 引入) ===
+HEALTH_WINDOW = 20         # 看最近 N 条决策
+HEALTH_ERR_THRESHOLD = 0.5 # 失败率 > 50% 视为不健康
+NOTIFY_COOLDOWN_SEC = 1800 # 30 min 内同等级告警只发一次
+NOTIFY_TS_FILE = Path("/tmp/router-health-last-notify")
+
+
+def health_check():
+    """读最近 HEALTH_WINDOW 条决策,返回失败率 + 最近 provider。
+    纯被动统计,失败不抛错,返回 None 即视为无数据。"""
+    try:
+        with open(LOG_PATH) as f:
+            recent = f.readlines()[-HEALTH_WINDOW:]
+        entries = [json.loads(l) for l in recent if l.strip()]
+        if len(entries) < 5:
+            return None  # 数据太少不告警
+        errs = sum(1 for e in entries if "error" in e.get("decision", {}))
+        last = entries[-1].get("decision", {})
+        return {
+            "n": len(entries),
+            "errs": errs,
+            "rate": errs / len(entries),
+            "last_provider": last.get("_provider", "?"),
+            "last_error": last.get("error", ""),
+        }
+    except Exception:
+        return None
+
+
+def maybe_fire_notification(h: dict):
+    """超阈值且过冷却期 → 触发 macOS 通知。失败静默吞掉。"""
+    now = int(time.time())
+    last = 0
+    try:
+        last = int(NOTIFY_TS_FILE.read_text().strip())
+    except Exception:
+        pass
+    if now - last < NOTIFY_COOLDOWN_SEC:
+        return
+    msg = (f"最近 {h['n']} 次路由,{h['errs']} 次失败 "
+           f"({int(h['rate']*100)}%),provider={h['last_provider']}")
+    title = "Router 健康告警"
+    try:
+        subprocess.run(
+            ["osascript", "-e",
+             f'display notification "{msg}" with title "{title}" sound name "Basso"'],
+            timeout=5, check=False, capture_output=True
+        )
+        NOTIFY_TS_FILE.write_text(str(now))
+    except Exception:
+        pass
+
+
+def render_health_banner():
+    """如最近失败率超阈值,返回一段 banner 文字插到 hook 输出最前;否则返回空。"""
+    h = health_check()
+    if not h or h["rate"] < HEALTH_ERR_THRESHOLD:
+        return ""
+    maybe_fire_notification(h)
+    err_str = f", 最后错误={h['last_error'][:40]}" if h["last_error"] else ""
+    return (f"⚠️ Router 健康告警:最近 {h['n']} 次决策中 {h['errs']} 次失败"
+            f"({int(h['rate']*100)}%),provider={h['last_provider']}{err_str}\n"
+            f"   建议:检查 sub2api / 切 ollama,或 router-mode silent 暂停\n\n")
+
+
 def main():
     # Mode check first — off means full bypass, no work, no log
     mode = load_mode()
@@ -393,14 +534,6 @@ def main():
 
     # v3.1: hard-regex defense-in-depth — overrides LLM if destructive keywords present
     decision = hard_regex_override(prompt, decision)
-
-    # === DIRECTOR-WORKER ANNOTATE START ===
-    if _classify_task is not None and not decision.get("error"):
-        try:
-            decision.update(_classify_task(prompt, decision))
-        except Exception:
-            pass
-    # === DIRECTOR-WORKER ANNOTATE END ===
 
     log_entry = {
         "ts": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -429,23 +562,8 @@ def main():
         sys.exit(0)
 
     if should_render(decision, mode):
-        # === DIRECTOR-WORKER DISPATCH START ===
-        # Original-v3.1: print(render_injection(decision))
-        dispatch_text = ""
-        if _build_dispatch is not None:
-            try:
-                d = _build_dispatch(prompt, decision)
-                if d.get("mode") == "dispatch" and d.get("text"):
-                    dispatch_text = d["text"]
-                    if d.get("sub_agent_prompt"):
-                        dispatch_text += "\n\n--- sub_agent_prompt ---\n" + d["sub_agent_prompt"]
-            except Exception:
-                pass
-        if dispatch_text:
-            print(dispatch_text)
-        else:
-            print(render_injection(decision))
-        # === DIRECTOR-WORKER DISPATCH END ===
+        banner = render_health_banner()
+        print(banner + render_injection(decision))
     sys.exit(0)
 
 

@@ -49,3 +49,6 @@ demo/
 
 # Internal working notes (not meant for the public repo)
 NEXT-STEPS.md
+*.bak-*
+.claude/active-plan.md
+.claude/bg-pids.txt
