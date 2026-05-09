@@ -188,9 +188,9 @@ def should_nudge_continue(transcript_path: str, last_assistant_text: str):
     if COMPLETION_MARKERS.search(last_500):
         return None
 
-    # 2. 在问用户 → 放行
+    # 2. 在问用户 → 放行(半角 ? 和中文全角 ?)
     tail_200 = text_for_match[-200:]
-    if "?" in tail_200 or "?" in tail_200:
+    if "?" in tail_200 or "？" in tail_200:
         return None
 
     # 3. 最近 5 条用户消息找 approval
