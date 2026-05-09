@@ -51,11 +51,21 @@ HEDGE_PATTERNS = [
 ]
 
 
+# 剥 ```code``` 和 `inline` 块,防止函数名/变量名/示例代码里的关键词被误触发
+CODE_BLOCK_RE = re.compile(r'```[\s\S]*?```|`[^`\n]*`')
+
+
+def strip_code_blocks(text: str) -> str:
+    """把 markdown 代码块/inline code 替换为空格,保留长度避免破坏后续匹配的偏移。"""
+    return CODE_BLOCK_RE.sub(lambda m: ' ' * len(m.group(0)), text)
+
+
 def hedge_check(last_assistant_text: str):
     if not last_assistant_text:
         return None
+    text_for_match = strip_code_blocks(last_assistant_text)
     for rx, label in HEDGE_PATTERNS:
-        m = rx.search(last_assistant_text)
+        m = rx.search(text_for_match)
         if m:
             return {
                 "decision": "block",
@@ -68,11 +78,17 @@ def hedge_check(last_assistant_text: str):
     return None
 
 
-def detect_execution_mode(transcript_path: str, lookback: int = 30) -> str:
+def detect_execution_mode(transcript_path: str, lookback: int = 5) -> str:
     """Scan recent transcript for tool uses.
     - 'execution' if found Edit/Write/Bash/MultiEdit in last N assistant turns
-    - 'discussion' otherwise
-    Returns 'unknown' if transcript unreadable."""
+    - 'discussion' otherwise (long pure-discussion tail downgrades to discussion mode)
+    Returns 'unknown' if transcript unreadable.
+
+    lookback default tightened from 30 → 5 (2026-05-09): a long session that started
+    with code edits then shifted to pure discussion was being misclassified as execution
+    because tool_use blocks lingered in the 30-turn window. 5 turns is enough to track
+    the immediate work mode without dragging in stale execution traces.
+    """
     if not transcript_path or not os.path.exists(transcript_path):
         return "unknown"
     EXECUTION_TOOLS = {"Edit", "Write", "Bash", "MultiEdit", "NotebookEdit"}
@@ -100,6 +116,114 @@ def detect_execution_mode(transcript_path: str, lookback: int = 30) -> str:
         if asst_seen >= lookback:
             break
     return "discussion"
+
+
+# === Approval-Gated Continue Nudge (2026-05-09) ===
+# 软提示:用户已对齐方案 + agent 还在执行 + 没说完 → 在 Stop 时注入"继续推进"
+# 解决"用户每次都要手动说'继续干'"的痛点。
+NUDGE_COOLDOWN_FILE = Path("/tmp/.completion-check-nudge-cooldown")
+NUDGE_COOLDOWN_SEC = 120
+
+# 用户表达"按你方案干"的关键词。刻意偏严:不收"好""对""行"等过短语句,避免误判。
+APPROVAL_PATTERNS = re.compile(
+    r"(继续(干|做|推进|跑)?|干吧|开干|开始(干|做)?|"
+    r"按你?(说的|的来|的方案|的思路|提议)|按这(个|思路|方案|来)|"
+    r"没问题(就|,)|就这样(干|办)?|一起干|一起做|去做|执行)",
+    re.I,
+)
+# 完成/收尾标记 — 命中即不 nudge(尊重 agent 真完成的判断)
+COMPLETION_MARKERS = re.compile(
+    r"(已完成|已搞定|已收工|跑通了|跑完了|改完了|修完了|做完了|"
+    r"全部完成|全部通过|全部 ok|exit:?\s*0|✅\s*$|"
+    r"finished|all\s*done|all\s*set|done\s*[\.。]?$)",
+    re.I,
+)
+
+
+def get_recent_user_messages(transcript_path, n: int = 5):
+    """返回最近 n 条 user 消息文本(从新到旧)。"""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return []
+    try:
+        with open(transcript_path) as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+    out = []
+    for line in reversed(lines[-200:]):
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if obj.get("type") != "user":
+            continue
+        msg = obj.get("message", {})
+        content = msg.get("content", [])
+        if isinstance(content, list):
+            for c in content:
+                if isinstance(c, dict) and c.get("type") == "text":
+                    out.append(c.get("text", ""))
+        elif isinstance(content, str):
+            out.append(content)
+        if len(out) >= n:
+            break
+    return out
+
+
+def should_nudge_continue(transcript_path: str, last_assistant_text: str):
+    """判断是否注入"继续推进"软提示。返回 dict (block + reason) 或 None。
+    五个条件全过才推:
+      1. 最后一条 assistant 文本不是完成宣告
+      2. 最后一条 assistant 文本不在向用户提问
+      3. 最近 5 条用户消息至少 1 条含 approval 词
+      4. exec_mode 是 execution(说明在干活,不是纯讨论)
+      5. cooldown 没激活(防 loop)
+    """
+    if not last_assistant_text:
+        return None
+    text_for_match = strip_code_blocks(last_assistant_text)
+    last_500 = text_for_match[-500:]
+
+    # 1. 完成宣告 → 放行
+    if COMPLETION_MARKERS.search(last_500):
+        return None
+
+    # 2. 在问用户 → 放行
+    tail_200 = text_for_match[-200:]
+    if "?" in tail_200 or "?" in tail_200:
+        return None
+
+    # 3. 最近 5 条用户消息找 approval
+    recent_user = get_recent_user_messages(transcript_path, n=5)
+    if not any(APPROVAL_PATTERNS.search(m) for m in recent_user):
+        return None
+
+    # 4. 必须是执行模式
+    if detect_execution_mode(transcript_path, lookback=5) != "execution":
+        return None
+
+    # 5. cooldown
+    now = int(time.time())
+    try:
+        last = int(NUDGE_COOLDOWN_FILE.read_text().strip())
+        if now - last < NUDGE_COOLDOWN_SEC:
+            return None
+    except Exception:
+        pass
+    try:
+        NUDGE_COOLDOWN_FILE.write_text(str(now))
+    except Exception:
+        pass
+
+    return {
+        "decision": "block",
+        "reason": (
+            "看起来还在执行,刚才已对齐过方案。如有未做完的步骤,直接继续;"
+            "如真已完成,turn 结束即可,不必再回复。"
+        ),
+        "_pattern_label": "approval-gated-continue-nudge",
+        "_matched_text": "(soft nudge)",
+    }
 
 
 def active_plan_check(transcript_path: str):
@@ -209,6 +333,14 @@ def main():
             sys.exit(0)
         log(result, mode_hint=mode)
         print(json.dumps({"decision": result["decision"], "reason": result["reason"]},
+                         ensure_ascii=False))
+        sys.exit(0)
+
+    # Continue nudge — 防御性的"对齐后没做完就停"软提示
+    nudge = should_nudge_continue(transcript_path, last_text)
+    if nudge:
+        log(nudge, mode_hint=mode)
+        print(json.dumps({"decision": nudge["decision"], "reason": nudge["reason"]},
                          ensure_ascii=False))
         sys.exit(0)
 
