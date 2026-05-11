@@ -41,7 +41,7 @@ FAILURE_TRCKR  = HOOK_DIR / "failure-tracker.py"
 STREAK_LOG = Path.home() / ".claude" / "router-logs" / "failure-streak.log"
 
 SESSION_ID = "e2e-test-session"
-CWD = str(Path.home() / "router-eval-share")
+CWD = str(HERE.parent)
 
 TIMEOUT = 20  # seconds per hook call
 

@@ -234,7 +234,7 @@ def _make_dispatch(fw, skill_name, skill_path, prompt, workflow_hint, descriptio
         f"        the OUTCOME paragraph is a summary, not a replacement for the work.\n"
         f"     4. Surface any [STATUS] lines as inline progress (best-effort, may be absent).\n"
         f"     5. After step 1-3, RUN this Bash to record outcome (one-line, fire-and-forget):\n"
-        f"        ~/router-eval-share/hook/director-record-outcome --status <success|partial|failed|empty> \\\n"
+        f"        ~/.router-hook/director-record-outcome --status <success|partial|failed|empty> \\\n"
         f"          --framework {fw} --skill {skill_name} \\\n"
         f"          --tokens <from Agent usage> --duration-ms <from Agent usage> --tool-uses <from Agent usage> \\\n"
         f"          [--fallback-to inject|none]"

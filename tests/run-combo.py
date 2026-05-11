@@ -27,7 +27,7 @@ SUMMARY_FILE = RESULTS_DIR / "combo-summary.md"
 
 ROUTER_PY = HOOK_DIR / "router.py"
 SESSION_ID = "combo-test-session"
-CWD = str(Path.home() / "router-eval-share")
+CWD = str(HERE.parent)
 TIMEOUT = 25
 
 
