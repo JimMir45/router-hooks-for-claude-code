@@ -2,7 +2,17 @@
 
 **English** · [中文](README.zh.md)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![GitHub stars](https://img.shields.io/github/stars/JimMir45/router-hooks-for-claude-code?style=social)](https://github.com/JimMir45/router-hooks-for-claude-code/stargazers)
+
 A **Claude Code hook system** that automatically classifies every prompt through a 5-layer intent router, routes it to the right AI framework, and enforces runtime guardrails — so Claude spends less time asking you what to do and more time doing it right.
+
+> **Demo** *(60s asciinema, coming soon — record locally and embed here)*
+>
+> ```
+> [demo placeholder — replace with: asciinema upload then <a href="..."><img src="...svg"/></a>]
+> ```
 
 ---
 
@@ -189,6 +199,26 @@ See `config/keys.json.example` for more examples (Together.ai, local Ollama, key
 - `docs/ARCHITECTURE.md` — Architecture deep-dive
 
 ---
+
+## Star History
+
+<a href="https://www.star-history.com/#JimMir45/router-hooks-for-claude-code&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JimMir45/router-hooks-for-claude-code&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JimMir45/router-hooks-for-claude-code&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JimMir45/router-hooks-for-claude-code&type=Date" />
+  </picture>
+</a>
+
+---
+
+## Contributing
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Issues, discussions, and PRs all open.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## License
 
