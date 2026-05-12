@@ -176,8 +176,42 @@ L4 默认 → CC
 
 Confidence 校准:simple+chore+单turn ≤0.85; 敏感 ≤0.6; exploratory ≤0.55
 
+— Memorable signal 提取 —
+检测用户消息是否含值得长期记住的"事实/决策/偏好/角色翻转",有则填 memorable_signal,无则 null。
+kind 枚举:
+  decision    — 明确选了方向 ("我决定 X / 走 X 路线 / 改成 X")
+  preference  — 持久偏好 ("我希望以后 X / 默认 X / 我不喜欢 X")
+  role_flip   — 推翻之前定义的角色/方向 ("不要再 X 了 / 之前说的 X 作废")
+  fact        — 项目级硬事实 ("X 项目用 Y / Z 必须 W")
+  ban         — 严令禁止 ("禁止 X / 不许 X")
+text 写成自包含一句(≤80 字),从用户原话提炼,不加修饰,带时间感时附 "(YYYY-MM-DD)"。
+绝大多数闲聊/执行确认 → null。宁可漏判,不要乱填。
+
 输出严格 JSON(无 markdown 包裹,不要漏字段):
-{"framework_primary":"SP|GS|ECC|CC","framework_fallback":"SP|GS|ECC|CC|null","ecc_subskill":"research|debug|security|database|memory|other|null","gs_role":"EngManager|CEO|QA|DocEngineer|Designer|null","needs_gsd":false,"offline_topic":false,"human_confirm_required":false,"confidence":0.85,"reason":"中文1句"}"""
+{"framework_primary":"SP|GS|ECC|CC","framework_fallback":"SP|GS|ECC|CC|null","ecc_subskill":"research|debug|security|database|memory|other|null","gs_role":"EngManager|CEO|QA|DocEngineer|Designer|null","needs_gsd":false,"offline_topic":false,"human_confirm_required":false,"confidence":0.85,"reason":"中文1句","memorable_signal":{"kind":"decision|preference|role_flip|fact|ban","text":"..."}|null}"""
+
+
+# --- Auto-capture memorable signals to beads (v3.2) ---
+def _maybe_capture_memory(cwd: str, signal):
+    """If LLM flagged a memorable signal AND beads is initialized in cwd, store it.
+    Fire-and-forget: 3s timeout, all errors swallowed. Never blocks routing.
+    """
+    if not signal or not isinstance(signal, dict):
+        return
+    text = (signal.get("text") or "").strip()
+    kind = (signal.get("kind") or "fact").strip()
+    if not text or not cwd or not os.path.isdir(os.path.join(cwd, ".beads")):
+        return
+    try:
+        subprocess.run(
+            ["bd", "remember", "--quiet", f"[{kind}] {text}"],
+            cwd=cwd,
+            capture_output=True,
+            timeout=3,
+            check=False,
+        )
+    except Exception:
+        pass
 
 
 # --- Hard-regex defense-in-depth (v3.1 fix) ---
@@ -534,6 +568,9 @@ def main():
 
     # v3.1: hard-regex defense-in-depth — overrides LLM if destructive keywords present
     decision = hard_regex_override(prompt, decision)
+
+    # v3.2: auto-capture memorable signals to beads (if bd initialized in cwd)
+    _maybe_capture_memory(payload.get("cwd", ""), decision.get("memorable_signal"))
 
     log_entry = {
         "ts": datetime.datetime.now().isoformat(timespec="seconds"),
