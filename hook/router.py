@@ -42,7 +42,7 @@ LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = Path.home() / ".config" / "router-hook" / "keys.json"
 MODE_FILE = Path.home() / ".config" / "router-hook" / "mode"
-TIMEOUT = 20  # seconds per provider; total worst-case ~40s with fallback (raised for local ollama)
+TIMEOUT = 35  # v4: claude --bare 启动+推理偶尔 17-20s,留 ~75% 头度
 
 # Force socket-level timeout so DNS/connect also time out (urlopen timeout is read-only)
 import socket
