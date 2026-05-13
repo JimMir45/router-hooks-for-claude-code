@@ -42,7 +42,7 @@ LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = Path.home() / ".config" / "router-hook" / "keys.json"
 MODE_FILE = Path.home() / ".config" / "router-hook" / "mode"
-TIMEOUT = 35  # v4: claude --bare 启动+推理偶尔 17-20s,留 ~75% 头度
+TIMEOUT = 45  # v4: claude --bare 偶尔 ~30s+ 出尾巴,留充足头度
 
 # Force socket-level timeout so DNS/connect also time out (urlopen timeout is read-only)
 import socket
@@ -75,6 +75,31 @@ def should_render(decision: dict, mode: str) -> bool:
     needs_confirm = decision.get("human_confirm_required")
     is_offline_warn = decision.get("offline_topic")  # offline still useful (warn user)
     return bool(has_action or needs_confirm or is_offline_warn)
+
+
+def _lenient_json_parse(text: str):
+    """Parse JSON,容错 LLM 偶尔在合法 JSON 后追加解释文本。
+
+    策略:
+    1. 先直接 json.loads(text)
+    2. 失败则用 JSONDecoder.raw_decode 取第一个完整 JSON object
+    """
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    try:
+        decoder = json.JSONDecoder()
+        # 跳过开头空白找第一个 {
+        i = 0
+        while i < len(text) and text[i] not in "{[":
+            i += 1
+        if i >= len(text):
+            return None
+        obj, _end = decoder.raw_decode(text[i:])
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
 
 
 def _get_claude_oauth_token():
@@ -368,12 +393,21 @@ def _call_claude_cli(provider: dict, prompt: str):
                     "_provider": provider["name"],
                     "_latency_ms": latency}
         text = (outer.get("result") or "").strip()
+        if not text:
+            return {"error": "empty_result", "_provider": provider["name"],
+                    "_latency_ms": latency}
+        # 剥 markdown 包裹 ```json ... ```
         if text.startswith("```"):
             text = text.strip("`")
             if text.lower().startswith("json"):
                 text = text[4:]
             text = text.strip("\n` ")
-        decision = json.loads(text)
+        decision = _lenient_json_parse(text)
+        if decision is None:
+            return {"error": "json_parse_failed",
+                    "_provider": provider["name"],
+                    "_latency_ms": latency,
+                    "_raw_preview": text[:160]}
         decision["_latency_ms"] = latency
         decision["_provider"] = provider["name"]
         decision["_cost_usd"] = outer.get("total_cost_usd")
