@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Claude Code UserPromptSubmit hook: 5-layer intent router.
-Backend: sub2api (https://sub2api.lvshuo.club) using gpt-4o-mini.
-Auth: API key from ~/.codex-proxy/auth.json (OPENAI_API_KEY).
-Logs every decision to ~/.claude/router-logs/router.log for v4 iteration.
+Backend (v4): Claude CLI in --bare mode using user's OAuth access token
+  pulled from macOS keychain ("Claude Code-credentials").
+Logs every decision to ~/.claude/router-logs/router.log.
 """
 import json
 import os
@@ -16,6 +16,13 @@ import urllib.request
 import urllib.error
 import subprocess
 from pathlib import Path
+
+# --- Anti-recursion guard ---
+# If router.py is invoked from a subprocess spawned by router.py itself
+# (e.g. via `claude --bare -p` for LLM call), exit immediately to avoid
+# infinite hook recursion. The outer caller sets ROUTER_HOOK_RECURSIVE=1.
+if os.environ.get("ROUTER_HOOK_RECURSIVE") == "1":
+    sys.exit(0)
 
 # === DIRECTOR-WORKER PATCH START ===
 # Inserted by Day 2-5. Remove with: bash hook/uninstall-director.sh
@@ -70,36 +77,35 @@ def should_render(decision: dict, mode: str) -> bool:
     return bool(has_action or needs_confirm or is_offline_warn)
 
 
-def load_providers():
-    """Return [primary, fallback] provider configs with resolved keys."""
+def _get_claude_oauth_token():
+    """Pull current OAuth access token from macOS keychain.
+    CC refreshes this in the background during active sessions.
+    Returns None if keychain unreadable or token missing.
+    """
     try:
-        cfg = json.loads(CONFIG_FILE.read_text())
+        raw = subprocess.run(
+            ["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
+            capture_output=True, timeout=3, check=True
+        ).stdout.decode().strip()
+        return json.loads(raw).get("claudeAiOauth", {}).get("accessToken") or None
     except Exception:
-        return []
-    out = []
-    for slot in ("primary", "fallback"):
-        p = cfg.get(slot)
-        if not p:
-            continue
-        key = p.get("key", "")
-        if not key and p.get("key_file"):
-            try:
-                key = json.loads(Path(p["key_file"]).read_text()).get(
-                    p.get("key_field", "OPENAI_API_KEY"), ""
-                )
-            except Exception:
-                key = ""
-        needs_key = p.get("type", "openai") != "ollama"
-        if key or not needs_key:
-            out.append({
-                "name": p.get("name", slot),
-                "endpoint": p["endpoint"],
-                "model": p.get("model", "gpt-4o-mini"),
-                "key": key,
-                "type": p.get("type", "openai"),
-                "max_tokens": p.get("max_tokens", 250),
-            })
-    return out
+        return None
+
+
+def load_providers():
+    """Return [primary] provider config. v4: claude-cli only (uses CC OAuth)."""
+    try:
+        cfg = json.loads(CONFIG_FILE.read_text()) if CONFIG_FILE.exists() else {}
+    except Exception:
+        cfg = {}
+    primary = cfg.get("primary") or {}
+    # Default to claude-cli; user can override model via keys.json primary.model
+    return [{
+        "name": primary.get("name", "claude-cli"),
+        "type": "claude-cli",
+        "model": primary.get("model", "sonnet"),
+        "max_tokens": primary.get("max_tokens", 800),
+    }]
 
 
 ROUTER_SYSTEM = """你是 Claude Code 的 5 层意图路由器。基于用户输入,严格按决策树输出 JSON。
@@ -187,25 +193,50 @@ kind 枚举:
 text 写成自包含一句(≤80 字),从用户原话提炼,不加修饰,带时间感时附 "(YYYY-MM-DD)"。
 绝大多数闲聊/执行确认 → null。宁可漏判,不要乱填。
 
+— Project tagging —
+当 memorable_signal != null,判断这条消息明确关于以下哪个项目,设 project_tag。
+已知项目:AI-Rec / ai-content-platform / car-ktv / dazi / instinct / music-rec-engine / music-rec-offline-eval-platform / music-score / music-score-factory / router-eval-share / sensevoice / xiaoyi
+判据:消息或上下文出现项目名/项目特有术语/项目特有目录路径。
+不确定或泛主题 → null(让 hook 用 cwd 作为兜底)。宁可漏判。
+
 输出严格 JSON(无 markdown 包裹,不要漏字段):
-{"framework_primary":"SP|GS|ECC|CC","framework_fallback":"SP|GS|ECC|CC|null","ecc_subskill":"research|debug|security|database|memory|other|null","gs_role":"EngManager|CEO|QA|DocEngineer|Designer|null","needs_gsd":false,"offline_topic":false,"human_confirm_required":false,"confidence":0.85,"reason":"中文1句","memorable_signal":{"kind":"decision|preference|role_flip|fact|ban","text":"..."}|null}"""
+{"framework_primary":"SP|GS|ECC|CC","framework_fallback":"SP|GS|ECC|CC|null","ecc_subskill":"research|debug|security|database|memory|other|null","gs_role":"EngManager|CEO|QA|DocEngineer|Designer|null","needs_gsd":false,"offline_topic":false,"human_confirm_required":false,"confidence":0.85,"reason":"中文1句","memorable_signal":{"kind":"decision|preference|role_flip|fact|ban","text":"..."}|null,"project_tag":"<项目名>|null"}"""
 
 
-# --- Auto-capture memorable signals to beads (v3.2) ---
-def _maybe_capture_memory(cwd: str, signal):
-    """If LLM flagged a memorable signal AND beads is initialized in cwd, store it.
+# --- Auto-capture memorable signals to beads (v3.2; v3.3 adds project_tag routing) ---
+_PROJECT_ROOT = os.path.expanduser("~/LS/Project")
+
+
+def _resolve_target_dir(cwd: str, project_tag) -> str:
+    """Pick which project's .beads/ to write to.
+    Priority: project_tag (if valid + has .beads/) > cwd (if has .beads/) > None
+    """
+    if isinstance(project_tag, str) and project_tag.strip():
+        candidate = os.path.join(_PROJECT_ROOT, project_tag.strip())
+        if os.path.isdir(os.path.join(candidate, ".beads")):
+            return candidate
+    if cwd and os.path.isdir(os.path.join(cwd, ".beads")):
+        return cwd
+    return ""
+
+
+def _maybe_capture_memory(cwd: str, signal, project_tag=None):
+    """If LLM flagged a memorable signal, route to the right project's beads.
     Fire-and-forget: 3s timeout, all errors swallowed. Never blocks routing.
     """
     if not signal or not isinstance(signal, dict):
         return
     text = (signal.get("text") or "").strip()
     kind = (signal.get("kind") or "fact").strip()
-    if not text or not cwd or not os.path.isdir(os.path.join(cwd, ".beads")):
+    if not text:
+        return
+    target = _resolve_target_dir(cwd, project_tag)
+    if not target:
         return
     try:
         subprocess.run(
             ["bd", "remember", "--quiet", f"[{kind}] {text}"],
-            cwd=cwd,
+            cwd=target,
             capture_output=True,
             timeout=3,
             check=False,
@@ -291,100 +322,85 @@ def fast_path(prompt: str):
 
 
 def call_one(provider: dict, prompt: str):
-    ptype = provider.get("type", "openai")
-    if ptype == "ollama":
-        body_obj = {
-            "model": provider["model"],
-            "messages": [
-                {"role": "system", "content": ROUTER_SYSTEM},
-                {"role": "user", "content": prompt[:3000]},
-            ],
-            "stream": False,
-            "think": False,
-            "format": "json",
-            "options": {
-                "num_predict": provider.get("max_tokens", 400),
-                "temperature": 0,
-            },
-        }
-    else:
-        body_obj = {
-            "model": provider["model"],
-            "max_tokens": provider.get("max_tokens", 250),
-            "temperature": 0,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": ROUTER_SYSTEM},
-                {"role": "user", "content": prompt[:3000]},
-            ],
-        }
-    body = json.dumps(body_obj).encode("utf-8")
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "router-hook/1.0 (claude-code)",
-    }
-    if provider.get("key"):
-        headers["Authorization"] = f"Bearer {provider['key']}"
-    req = urllib.request.Request(provider["endpoint"], data=body, headers=headers)
+    """Dispatch to provider-specific call. v4: only claude-cli supported."""
+    if provider.get("type") == "claude-cli":
+        return _call_claude_cli(provider, prompt)
+    return {"error": "unknown_provider_type", "_provider": provider.get("name", "?")}
+
+
+def _call_claude_cli(provider: dict, prompt: str):
+    """Invoke `claude --bare -p` with user's OAuth token; parse JSON result.
+    --bare skips hooks/skills/keychain reads, so no recursion + minimal context.
+    """
+    token = _get_claude_oauth_token()
     t0 = time.time()
+    if not token:
+        return {"error": "no_oauth_token", "_provider": provider["name"],
+                "_latency_ms": int((time.time() - t0) * 1000)}
+    env = os.environ.copy()
+    env["ROUTER_HOOK_RECURSIVE"] = "1"
+    env["ANTHROPIC_API_KEY"] = token
+    # Drop variables that could leak parent CC session context into the spawned --bare CC.
+    for k in ("CLAUDE_CODE_EXECPATH", "CLAUDE_PROJECT_DIR", "CLAUDE_PLUGIN_DATA",
+              "CLAUDE_PLUGIN_ROOT", "CLAUDE_CODE_SESSION_ID"):
+        env.pop(k, None)
+    cmd = [
+        "claude", "--bare", "-p",
+        "--system-prompt", ROUTER_SYSTEM,
+        "--output-format", "json",
+        "--model", provider.get("model", "sonnet"),
+        "--no-session-persistence",
+    ]
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            resp = json.loads(r.read())
-        if ptype == "ollama":
-            text = (resp.get("message", {}) or {}).get("content", "").strip()
-        else:
-            text = resp["choices"][0]["message"]["content"].strip()
+        r = subprocess.run(
+            cmd, env=env, input=prompt[:3000], text=True,
+            capture_output=True, timeout=TIMEOUT,
+        )
+        latency = int((time.time() - t0) * 1000)
+        if r.returncode != 0:
+            return {"error": f"claude_cli_rc{r.returncode}",
+                    "_provider": provider["name"],
+                    "_latency_ms": latency,
+                    "_stderr": (r.stderr or "")[:200]}
+        outer = json.loads(r.stdout)
+        if outer.get("is_error"):
+            return {"error": f"claude_api_{outer.get('api_error_status') or 'err'}",
+                    "_provider": provider["name"],
+                    "_latency_ms": latency}
+        text = (outer.get("result") or "").strip()
         if text.startswith("```"):
             text = text.strip("`")
             if text.lower().startswith("json"):
                 text = text[4:]
             text = text.strip("\n` ")
         decision = json.loads(text)
-        decision["_latency_ms"] = int((time.time() - t0) * 1000)
+        decision["_latency_ms"] = latency
         decision["_provider"] = provider["name"]
+        decision["_cost_usd"] = outer.get("total_cost_usd")
         return decision
-    except urllib.error.HTTPError as e:
-        return {"error": f"http_{e.code}", "_provider": provider["name"],
+    except subprocess.TimeoutExpired:
+        return {"error": "timeout", "_provider": provider["name"],
                 "_latency_ms": int((time.time() - t0) * 1000)}
     except Exception as e:
         return {"error": str(e)[:120], "_provider": provider["name"],
                 "_latency_ms": int((time.time() - t0) * 1000)}
 
 
-# === P1 二阶路由 (2026-05-08 引入) ===
-# 当 primary(OpenAI 系) 返回的 confidence < 阈值,自动用更强模型(gpt-5.5)重投
-UPGRADE_THRESHOLD = 0.7
-UPGRADE_MODEL_DEFAULT = "gpt-5.5"
+# === P1 二阶路由 (2026-05-08 引入, v4 简化) ===
+# v4 用 Claude sonnet 即可,不需要再 upgrade 到 gpt-5.5
+UPGRADE_THRESHOLD = 0.5  # 仅在极低置信时重试一次(同模型,温度仍为 0 — 实际等同重试)
 
 
 def call_router(prompt: str):
     providers = load_providers()
     if not providers:
         return {"error": "no_providers_configured"}
-    last_error = None
     for prov in providers:
         decision = call_one(prov, prompt)
         if decision.get("error"):
-            last_error = decision
             continue
-        # 二阶升级:仅当 primary 是 OpenAI 系 + confidence 低 + provider 没禁用升级时
-        upgrade_model = prov.get("upgrade_model", UPGRADE_MODEL_DEFAULT)
-        if (prov.get("type", "openai") == "openai"
-                and upgrade_model
-                and decision.get("confidence", 1.0) < UPGRADE_THRESHOLD):
-            upgraded_prov = {**prov, "model": upgrade_model}
-            upg = call_one(upgraded_prov, prompt)
-            if not upg.get("error"):
-                upg["_upgraded_from"] = prov.get("model")
-                upg["_upgrade_reason"] = (
-                    f"primary_conf={decision.get('confidence'):.2f}<{UPGRADE_THRESHOLD}"
-                )
-                return upg
-            # 升级失败,保留原决策(标注一下)
-            decision["_upgrade_attempted"] = True
-            decision["_upgrade_failed"] = (upg.get("error", "?") or "?")[:60]
         return decision
-    return last_error or {"error": "all_providers_failed"}
+    return {"error": "all_providers_failed"}
 
 
 GS_ROLE_SKILLS = {
@@ -569,8 +585,12 @@ def main():
     # v3.1: hard-regex defense-in-depth — overrides LLM if destructive keywords present
     decision = hard_regex_override(prompt, decision)
 
-    # v3.2: auto-capture memorable signals to beads (if bd initialized in cwd)
-    _maybe_capture_memory(payload.get("cwd", ""), decision.get("memorable_signal"))
+    # v3.3: auto-capture memorable signals — prefer project_tag, fallback cwd
+    _maybe_capture_memory(
+        payload.get("cwd", ""),
+        decision.get("memorable_signal"),
+        project_tag=decision.get("project_tag"),
+    )
 
     log_entry = {
         "ts": datetime.datetime.now().isoformat(timespec="seconds"),
